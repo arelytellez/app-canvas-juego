@@ -7,6 +7,9 @@ let level = 1;
 let totalLevels = 10;
 let starsPerLevel = 10;
 
+let totalDestroyed = 0;   // ⭐ acumulativo
+let totalMissed = 0;      // ❌ acumulativo
+
 let animationId;
 let isPaused = false;
 let gameStarted = false;
@@ -17,6 +20,9 @@ const levelText = document.getElementById("level");
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const restartBtn = document.getElementById("restartBtn");
+
+const destroyedText = document.getElementById("eliminadas");
+const missedText = document.getElementById("escapadas");
 
 let audioContext;
 
@@ -44,9 +50,6 @@ function playPopSound(){
     oscillator.stop(audioContext.currentTime + 0.2);
 }
 
-let mouseX = 0;
-let mouseY = 0;
-
 // ⭐ STAR
 class Star{
     constructor(speed){
@@ -56,8 +59,6 @@ class Star{
 
         this.speedY = speed + Math.random()*0.5;
         this.speedX = (Math.random() - 0.5) * 1.5;
-
-        this.hover = false;
     }
 
     draw(){
@@ -87,7 +88,6 @@ class Star{
 
         ctx.closePath();
         ctx.fill();
-
         ctx.restore();
     }
 
@@ -126,11 +126,44 @@ class Explosion{
     }
 }
 
-// ✅ Barra basada en niveles
+// 🔥 COLISIONES ENTRE ESTRELLAS
+function resolveCollisions(){
+    for(let i = 0; i < stars.length; i++){
+        for(let j = i + 1; j < stars.length; j++){
+
+            let starA = stars[i];
+            let starB = stars[j];
+
+            let dx = starB.x - starA.x;
+            let dy = starB.y - starA.y;
+            let distance = Math.sqrt(dx*dx + dy*dy);
+
+            let minDistance = starA.radius + starB.radius;
+
+            if(distance <= minDistance){
+
+                let angle = Math.atan2(dy, dx);
+                let overlap = minDistance - distance;
+
+                let separationX = Math.cos(angle) * overlap / 2;
+                let separationY = Math.sin(angle) * overlap / 2;
+
+                starA.x -= separationX;
+                starA.y -= separationY;
+
+                starB.x += separationX;
+                starB.y += separationY;
+            }
+        }
+    }
+}
+
+// ✅ Barra basada en niveles (ahora llega a 100%)
 function updateProgress(){
-    let percent = ((level - 1) / totalLevels) * 100;
+    let percent = (level / totalLevels) * 100;
+
     progressBar.style.width = percent + "%";
-    progressBar.innerText = Math.floor(percent) + "%";
+    progressBar.innerText = level + " / " + totalLevels;
 }
 
 // Crear estrellas
@@ -153,8 +186,7 @@ function checkLevelComplete(){
             updateProgress();
             createStars();
         }else{
-            // 🔥 Ya no mostramos mensaje
-            updateProgress();
+            updateProgress(); // queda en 10/10 y 100%
         }
     }
 }
@@ -168,8 +200,13 @@ function animate(){
 
         if(star.y + star.radius < 0){
             stars.splice(index,1);
+            totalMissed++;
+            missedText.innerText = totalMissed;
         }
     });
+
+    // 🔥 Evita que se encimen
+    resolveCollisions();
 
     explosions.forEach((exp,index)=>{
         exp.update();
@@ -199,10 +236,13 @@ canvas.addEventListener("click",(e)=>{
         let dy = clickY - star.y;
         let dist = Math.sqrt(dx*dx + dy*dy);
 
-        if(dist < star.radius){
+        if(dist <= star.radius){
             playPopSound();
             explosions.push(new Explosion(star.x,star.y));
             stars.splice(i,1);
+
+            totalDestroyed++;
+            destroyedText.innerText = totalDestroyed;
             break;
         }
     }
@@ -237,6 +277,11 @@ restartBtn.addEventListener("click",()=>{
     level = 1;
     stars = [];
     explosions = [];
+    totalDestroyed = 0;
+    totalMissed = 0;
+
+    destroyedText.innerText = 0;
+    missedText.innerText = 0;
 
     levelText.innerText = level;
     updateProgress();
@@ -251,6 +296,7 @@ restartBtn.addEventListener("click",()=>{
 });
 
 animate();
+
 
 
 
