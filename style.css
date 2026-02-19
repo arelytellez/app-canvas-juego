@@ -1,0 +1,17 @@
+body{
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+}
+
+canvas{
+    background: radial-gradient(circle, #000428, #004e92);
+    border-radius: 15px;
+    box-shadow: 0px 0px 25px #00ffff;
+    cursor: pointer;
+}
+
+.progress{
+    border-radius: 20px;
+}
+
+
